@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Project</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      background: radial-gradient(ellipse at top, #12345e 0%, #071a30 55%, #040f1d 100%);
+      color: white; min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+
+    header {
+      padding: 1.4rem 2rem 0.8rem;
+      display: flex; justify-content: space-between; align-items: flex-end;
+      gap: 1rem; flex-wrap: wrap;
+    }
+    header h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.3px; }
+    header h1 span { color: #4ade80; }
+    header p { color: #9fb6d1; font-size: 0.95rem; margin-top: 0.25rem; }
+    .counter {
+      background: rgba(255,255,255,0.1); padding: 0.35rem 0.9rem; border-radius: 30px;
+      font-size: 0.85rem; font-weight: 700; color: #cfe0f3;
+    }
+
+    main {
+      flex: 1; padding: 0.5rem 2rem 1.6rem;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .stage { width: 100%; max-width: 1400px; }
+
+    .viewport {
+      position: relative; width: 100%; aspect-ratio: 16 / 9;
+      max-height: calc(100vh - 260px);
+      background: #000; border-radius: 18px; overflow: hidden;
+      box-shadow: 0 30px 60px -20px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto;
+    }
+    .viewport video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+
+    .status { text-align: center; color: #9fb6d1; padding: 2rem; }
+    .status .icon { font-size: 3.5rem; margin-bottom: 1rem; }
+    .status .big { font-size: 1.15rem; color: white; font-weight: 600; margin-bottom: 0.4rem; }
+    .spinner {
+      width: 46px; height: 46px; margin: 0 auto 1.2rem;
+      border: 4px solid rgba(255,255,255,0.15); border-top-color: #4ade80;
+      border-radius: 50%; animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .info {
+      margin-top: 1rem; display: flex; justify-content: space-between;
+      align-items: center; gap: 1rem; flex-wrap: wrap;
+    }
+    .info-left { min-width: 0; flex: 1 1 320px; }
+    .team { font-size: 1.45rem; font-weight: 800; line-height: 1.2; word-break: break-word; }
+    .meta { color: #9fb6d1; font-size: 0.95rem; margin-top: 0.3rem; }
+
+    .controls { display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; }
+    .controls button {
+      background: rgba(255,255,255,0.1); color: white; border: none;
+      padding: 0.6rem 1.1rem; border-radius: 30px; cursor: pointer;
+      font-family: inherit; font-size: 0.88rem; font-weight: 600;
+      transition: background 0.15s;
+    }
+    .controls button:hover { background: rgba(255,255,255,0.2); }
+    .controls button:disabled { opacity: 0.35; pointer-events: none; }
+    .controls button.on { background: #16a34a; }
+
+    .dots {
+      display: flex; gap: 7px; justify-content: center; flex-wrap: wrap;
+      margin-top: 1.1rem;
+    }
+    .dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: rgba(255,255,255,0.25); cursor: pointer;
+      transition: background 0.15s, transform 0.15s;
+    }
+    .dot:hover { background: rgba(255,255,255,0.55); }
+    .dot.active { background: #4ade80; transform: scale(1.4); }
+
+    .progress {
+      height: 3px; background: rgba(255,255,255,0.08); border-radius: 3px;
+      margin-top: 0.9rem; overflow: hidden;
+    }
+    .progress div { height: 100%; width: 0; background: #4ade80; transition: width 0.25s linear; }
+
+    @media (max-width: 700px) {
+      header, main { padding-left: 1rem; padding-right: 1rem; }
+      .team { font-size: 1.15rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>💻 Dev Project <span>Showcase</span></h1>
+    <p>3-week Advanced Programming project · Written in C, C++ and raylib (a lightweight graphics library)</p>
+  </div>
+  <div class="counter" id="counter">—</div>
+</header>
+
+<main>
+  <div class="stage">
+    <div class="viewport" id="viewport">
+      <div class="status">
+        <div class="spinner"></div>
+        <div class="big">Preparing showcase…</div>
+        <div>Loading project videos</div>
+      </div>
+    </div>
+
+    <div class="progress"><div id="progressBar"></div></div>
+
+    <div class="info">
+      <div class="info-left">
+        <div class="team" id="teamName">&nbsp;</div>
+        <div class="meta" id="meta">&nbsp;</div>
+      </div>
+      <div class="controls">
+        <button id="prevBtn" disabled>⏮ Prev</button>
+        <button id="playBtn" class="on" disabled>⏸ Pause</button>
+        <button id="nextBtn" disabled>Next ⏭</button>
+        <button id="muteBtn" disabled>🔇 Sound off</button>
+        <button id="fsBtn" disabled>⛶ Full screen</button>
+      </div>
+    </div>
+
+    <div class="dots" id="dots"></div>
+  </div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════════════
+const CLASS_ID = 'devproject';
+const CHECK_TIMEOUT_MS = 15000;          // how long to wait for a video to respond
+const RELOAD_AFTER_MS = 15 * 60 * 1000;  // re-fetch list after a full loop if older than this
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDV3YtuyBW_IoLWKwPS3R7toeI2FCVs1kQ",
+  authDomain: "devproject2-e4859.firebaseapp.com",
+  databaseURL: "https://devproject2-e4859-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "devproject2-e4859",
+  storageBucket: "devproject2-e4859.firebasestorage.app",
+  messagingSenderId: "961626950637",
+  appId: "1:961626950637:web:692b09932df7b43e8675e4",
+  measurementId: "G-121XWX19B5"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ═══════════════════════════════════════════════════════════
+//  STATE + DOM
+// ═══════════════════════════════════════════════════════════
+let playlist = [];        // only videos that passed the check
+let index = 0;
+let playing = true;
+let muted = true;
+let videoEl = null;
+let lastLoaded = 0;
+
+const $ = id => document.getElementById(id);
+const viewport = $('viewport'), counter = $('counter'), teamName = $('teamName'),
+      meta = $('meta'), dots = $('dots'), progressBar = $('progressBar'),
+      prevBtn = $('prevBtn'), nextBtn = $('nextBtn'), playBtn = $('playBtn'),
+      muteBtn = $('muteBtn'), fsBtn = $('fsBtn');
+
+// ═══════════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════════
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function nameFor(roster, num) {
+  if (!num) return '';
+  const s = roster[String(num).trim().toLowerCase()];
+  return s && (s.firstName || s.lastName) ? `${s.firstName || ''} ${s.lastName || ''}`.trim() : '';
+}
+
+function encodeShareUrl(url) {
+  const b64 = btoa(unescape(encodeURIComponent(url)));
+  return 'u!' + b64.replace(/=+$/, '').replace(/\//g, '_').replace(/\+/g, '-');
+}
+
+// Turn a share link into direct video URLs to try, in order
+function directVideoSources(url) {
+  if (!url) return [];
+  const out = [];
+  try {
+    const u = new URL(url.trim());
+    const host = u.hostname.toLowerCase();
+    if (host.endsWith('sharepoint.com')) {
+      u.searchParams.delete('e');
+      u.searchParams.set('download', '1');
+      out.push(u.toString());
+    } else if (host === '1drv.ms' || host.endsWith('onedrive.live.com')) {
+      const share = encodeShareUrl(url.trim());
+      out.push('https://api.onedrive.com/v1.0/shares/' + share + '/root/content');
+      out.push('https://api.onedrive.com/v1.0/shares/' + share + '/driveItem/content');
+    } else if (/\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(u.pathname)) {
+      out.push(u.toString());
+    }
+  } catch (e) {}
+  return out;
+}
+
+// Test one URL: resolves true if the browser can read the video's metadata
+function testSource(src) {
+  return new Promise(resolve => {
+    const v = document.createElement('video');
+    v.muted = true; v.preload = 'metadata';
+    let done = false;
+    const finish = ok => {
+      if (done) return; done = true;
+      clearTimeout(timer);
+      v.removeAttribute('src'); try { v.load(); } catch (e) {}
+      resolve(ok);
+    };
+    const timer = setTimeout(() => finish(false), CHECK_TIMEOUT_MS);
+    v.addEventListener('loadedmetadata', () => finish(v.duration > 0 || v.videoWidth > 0));
+    v.addEventListener('error', () => finish(false));
+    v.src = src;
+  });
+}
+
+// Find the first working source for a reel (or null)
+async function findPlayable(reel) {
+  for (const src of reel.sources) {
+    if (await testSource(src)) return src;
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LOAD + CHECK
+// ═══════════════════════════════════════════════════════════
+async function loadPlaylist() {
+  const [teamsSnap, groupsSnap, studentsSnap] = await Promise.all([
+    db.ref(`classes/${CLASS_ID}/teams`).once('value'),
+    db.ref('groups').once('value'),
+    db.ref('students').once('value')
+  ]);
+  const teams = teamsSnap.val() || {};
+  const groups = groupsSnap.val() || {};
+  const roster = studentsSnap.val() || {};
+
+  // Latest screencast from each team
+  const candidates = [];
+  Object.entries(teams).forEach(([groupId, t]) => {
+    const g = groups[groupId] || {};
+    const scs = Object.values(g.screencasts || {})
+      .filter(sc => sc && sc.url)
+      .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    if (!scs.length) return;
+    const s1 = t.student1 || g.student1, s2 = t.student2 || g.student2;
+    const names = [
+      nameFor(roster, s1) || t.student1Name || g.student1Name,
+      nameFor(roster, s2) || t.student2Name || g.student2Name
+    ].filter(Boolean);
+    // try newest first; if it fails, fall back to the team's older screencasts
+    candidates.push({
+      teamName: t.groupName || g.groupName || names.join(' & ') || 'Team',
+      students: names,
+      options: scs.map(sc => ({ title: sc.title || 'Screencast', timestamp: sc.timestamp || 0,
+                                sources: directVideoSources(sc.url) }))
+                  .filter(o => o.sources.length)
+    });
+  });
+
+  // Check every team in parallel; keep the newest screencast that actually plays
+  const checked = await Promise.all(candidates.map(async c => {
+    for (const opt of c.options) {
+      const src = await findPlayable(opt);
+      if (src) return { teamName: c.teamName, students: c.students, title: opt.title,
+                        timestamp: opt.timestamp, src };
+    }
+    return null;
+  }));
+
+  lastLoaded = Date.now();
+  return checked.filter(Boolean).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PLAYER
+// ═══════════════════════════════════════════════════════════
+function renderDots() {
+  dots.innerHTML = playlist.map((_, i) =>
+    `<div class="dot${i === index ? ' active' : ''}" data-i="${i}" title="${escapeHtml(playlist[i].teamName)}"></div>`).join('');
+}
+
+function setControls(enabled) {
+  [prevBtn, nextBtn, playBtn, muteBtn, fsBtn].forEach(b => b.disabled = !enabled);
+}
+
+function showMessage(icon, big, small) {
+  viewport.innerHTML = `<div class="status"><div class="icon">${icon}</div>
+    <div class="big">${escapeHtml(big)}</div><div>${escapeHtml(small || '')}</div></div>`;
+}
+
+function show(i) {
+  if (!playlist.length) return;
+  index = (i + playlist.length) % playlist.length;
+  const reel = playlist[index];
+
+  counter.textContent = `${index + 1} / ${playlist.length}`;
+  teamName.textContent = reel.teamName;
+  meta.textContent = '🎬 ' + reel.title + (reel.students.length ? '  •  ' + reel.students.join(' & ') : '');
+  dots.querySelectorAll('.dot').forEach((d, k) => d.classList.toggle('active', k === index));
+  progressBar.style.width = '0';
+
+  if (videoEl) { videoEl.pause(); videoEl.removeAttribute('src'); videoEl.load(); }
+
+  const v = document.createElement('video');
+  v.controls = true; v.playsInline = true; v.autoplay = playing;
+  v.muted = muted;
+  v.addEventListener('timeupdate', () => {
+    if (v.duration) progressBar.style.width = (v.currentTime / v.duration * 100) + '%';
+  });
+  v.addEventListener('ended', advance);
+  v.addEventListener('volumechange', () => { muted = v.muted; updateMute(); });
+  // A video that breaks mid-show is dropped quietly
+  v.addEventListener('error', () => {
+    if (videoEl !== v) return;
+    playlist.splice(index, 1);
+    if (!playlist.length) { showMessage('📼', 'No videos available right now', ''); setControls(false); return; }
+    renderDots();
+    show(index);
+  });
+
+  viewport.innerHTML = '';
+  viewport.appendChild(v);
+  videoEl = v;
+  v.src = reel.src;
+  if (playing) v.play().catch(() => {
+    // Autoplay with sound was blocked: fall back to muted
+    v.muted = true; muted = true; updateMute(); v.play().catch(() => {});
+  });
+}
+
+async function advance() {
+  const atEnd = index === playlist.length - 1;
+  if (atEnd && Date.now() - lastLoaded > RELOAD_AFTER_MS) {
+    // refresh the list in the background-friendly way: keep showing old list if it fails
+    try {
+      const fresh = await loadPlaylist();
+      if (fresh.length) { playlist = fresh; renderDots(); }
+    } catch (e) {}
+    show(0);
+    return;
+  }
+  if (playlist.length === 1 && videoEl) { videoEl.currentTime = 0; videoEl.play().catch(() => {}); return; }
+  show(index + 1);
+}
+
+function updateMute() { muteBtn.textContent = muted ? '🔇 Sound off' : '🔊 Sound on'; muteBtn.classList.toggle('on', !muted); }
+
+prevBtn.addEventListener('click', () => show(index - 1));
+nextBtn.addEventListener('click', () => show(index + 1));
+playBtn.addEventListener('click', () => {
+  playing = !playing;
+  playBtn.textContent = playing ? '⏸ Pause' : '▶ Play';
+  playBtn.classList.toggle('on', playing);
+  if (videoEl) playing ? videoEl.play().catch(() => {}) : videoEl.pause();
+});
+muteBtn.addEventListener('click', () => {
+  muted = !muted; updateMute();
+  if (videoEl) videoEl.muted = muted;
+});
+fsBtn.addEventListener('click', () => {
+  const el = document.querySelector('.stage');
+  if (document.fullscreenElement) document.exitFullscreen();
+  else (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+});
+dots.addEventListener('click', e => { const d = e.target.closest('.dot'); if (d) show(+d.dataset.i); });
+document.addEventListener('keydown', e => {
+  if (!playlist.length) return;
+  if (e.key === 'ArrowRight') show(index + 1);
+  else if (e.key === 'ArrowLeft') show(index - 1);
+  else if (e.key === ' ' && e.target === document.body) { e.preventDefault(); playBtn.click(); }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+(async function init() {
+  try {
+    playlist = await loadPlaylist();
+  } catch (e) {
+    console.error(e);
+    showMessage('⚠️', 'Couldn\'t load the showcase', 'Please refresh the page.');
+    return;
+  }
+  if (!playlist.length) {
+    showMessage('📼', 'No videos available yet', 'Check back soon.');
+    counter.textContent = '0 / 0';
+    return;
+  }
+  setControls(true);
+  renderDots();
+  show(0);
+})();
+</script>
+</body>
+</html>
